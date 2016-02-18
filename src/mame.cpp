@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdarg.h>
+#include <sys/time.h>
 #include "driver.h"
 #include "ui_text.h" /* LBO 042400 */
 #include "artwork.h"
@@ -19,6 +20,7 @@ void *playback; /* for -playback */
 int mame_debug; /* !0 when -debug option is specified */
 
 int bailing;	/* set to 1 if the startup is aborted to prevent multiple error messages */
+extern int kiosk_timeout;
 
 static int settingsloaded;
 
@@ -29,6 +31,8 @@ int bitmap_dirty;	/* set by osd_clearbitmap() */
 extern unsigned char *spriteram,*spriteram_2;
 extern unsigned char *buffered_spriteram,*buffered_spriteram_2;
 extern int spriteram_size,spriteram_2_size;
+extern struct timeval last_input_event;
+extern int enable_freeplay;
 
 int init_machine(void);
 void shutdown_machine(void);
@@ -38,6 +42,9 @@ void overlay_free(void);
 void backdrop_free(void);
 void overlay_remap(void);
 void overlay_draw(struct osd_bitmap *dest,struct osd_bitmap *source);
+
+static void parse_dip_switches();
+static void dump_dip_switches();
 
 int run_game(int game)
 {
@@ -128,6 +135,8 @@ int run_game(int game)
 	{
 		if (init_machine() == 0)
 		{
+			parse_dip_switches();
+
 			if (run_machine() == 0)
 				err = 0;
 			else if (!bailing)
@@ -512,6 +521,14 @@ int updatescreen(void)
 		profiler_mark(PROFILER_END);
 	}
 
+	struct timeval now;
+	gettimeofday(&now, NULL);
+
+	if (kiosk_timeout && now.tv_sec - last_input_event.tv_sec > kiosk_timeout) {
+		fprintf(stderr, "Kiosk mode - %ds timeout exceeded\n", kiosk_timeout);
+		return 1;
+	}
+
 	/* the user interface must be called between vh_update() and osd_update_video_and_audio(), */
 	/* to allow it to overlay things on the game display. We must call it even */
 	/* if the frame is skipped, to keep a consistent timing. */
@@ -703,4 +720,64 @@ int mame_highscore_enabled(void)
 #endif /* MAME_NET */
 
 	return 1;
+}
+
+
+
+static void parse_dip_switches()
+{
+	if (!enable_freeplay) {
+		return;
+	}
+
+	struct InputPort *item = Machine->input_ports;
+	while (item->type != IPT_END) {
+		if ((item->type & ~IPF_MASK) == IPT_DIPSWITCH_NAME 
+			&& input_port_name(item) != 0 
+			&& (item->type & IPF_UNUSED) == 0 
+			&& !(!options.cheat && (item->type & IPF_CHEAT))) {
+
+			struct InputPort *sub = item + 1;
+			while ((sub->type & ~IPF_MASK) == IPT_DIPSWITCH_SETTING) {
+				const char *port_name = input_port_name(sub);
+				if (strcasecmp(port_name, "free play")) {
+					if (sub->default_value != item->default_value) {
+						printf("FIXME: Freeplay (not yet) enabled\n");
+						dump_dip_switches(); // FIXME
+					}
+					return;
+				}
+				sub++;
+			}
+		}
+		item++;
+	}
+
+	fprintf(stderr, "Don't know how to enable freeplay. Switches:\n");
+	dump_dip_switches();
+}
+
+
+
+static void dump_dip_switches()
+{
+	struct InputPort *item = Machine->input_ports;
+	while (item->type != IPT_END) {
+		if ((item->type & ~IPF_MASK) == IPT_DIPSWITCH_NAME 
+			&& input_port_name(item) != 0 
+			&& (item->type & IPF_UNUSED) == 0 
+			&& !(!options.cheat && (item->type & IPF_CHEAT))) {
+
+			printf("  %s\n", input_port_name(item));
+
+			struct InputPort *sub = item + 1;
+			while ((sub->type & ~IPF_MASK) == IPT_DIPSWITCH_SETTING) {
+				printf("   %c %s\n", 
+					(sub->default_value == item->default_value) ? 'x' : ' ',
+					input_port_name(sub));
+				sub++;
+			}
+		}
+		item++;
+	}
 }

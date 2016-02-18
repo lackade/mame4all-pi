@@ -15,6 +15,7 @@ int num_joysticks=4;
 int mouse_xrel=0;
 int mouse_yrel=0;
 Uint8 mouse_button=0;
+struct timeval last_input_event;
 
 #include "minimal.h"
 
@@ -250,6 +251,7 @@ static int key[KEY_MAX];
 void keyprocess(SDLKey inkey, SDL_bool pressed)
 {
 	int i=0;
+	gettimeofday(&last_input_event, NULL);
 
 	while(sdlkeytranslate[i].mamekey)
 	{	
@@ -285,6 +287,8 @@ void joyprocess(Uint8 button, SDL_bool pressed, Uint8 njoy)
 	if(njoy == 1) mykey = &ExKey2;
 	if(njoy == 2) mykey = &ExKey3;
 	if(njoy == 3) mykey = &ExKey4;
+
+	gettimeofday(&last_input_event, NULL);
 
     switch(button)
     {
@@ -466,7 +470,6 @@ static struct JoystickInfo joylist[MAX_JOY] =
 
 static char joynames[MAX_JOY][MAX_JOY_NAME_LEN+1];	/* will be used to store names for the above */
 
-
 static int joyequiv[][2] =
 {
 	{ JOYCODE(1,1,1,1),	JOYCODE_1_LEFT },
@@ -561,6 +564,7 @@ static void init_joy_list(void)
 	int tot,i,j,k;
 	char buf[256];
 
+	gettimeofday(&last_input_event, NULL);
 	tot = 0;
 
  	/* first of all, map mouse buttons */

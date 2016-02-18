@@ -38,6 +38,8 @@ void init_inpdir(void);
 void frontend_gui (char *gamename, int first_run);
 
 int kiosk_mode;
+int kiosk_timeout = 0;
+int enable_freeplay = 0;
 
 static FILE *errorlog;
 
@@ -134,32 +136,44 @@ int main (int argc, char **argv)
 
 	soundcard=-1;
 
-	for (i = 1;i < argc;i++) /* V.V_121997 */
-	{
-		if (strcasecmp(argv[i],"-log") == 0)
-			errorlog = fopen("error.log","wa");
-		if (strcasecmp(argv[i],"-nocyclone") == 0)
-			use_cyclone=0;
-		if (strcasecmp(argv[i],"-drz80") == 0)
-			use_drz80_save=1;
-		if (strcasecmp(argv[i],"-nodrz80_snd") == 0)
-			use_drz80_snd_save=0;
-		if (strcasecmp(argv[i],"-scale") == 0)
-			video_scale=1;
-		if (strcasecmp(argv[i],"-border") == 0)
-			video_border=1;
-		if (strcasecmp(argv[i],"-aspect") == 0)
-			video_aspect=1;
-		if (strcasecmp(argv[i],"-nothrottle") == 0)
-			throttle=0;
-		if (strcasecmp(argv[i],"-nosound") == 0)
-			soundcard=0;
-        if (strcasecmp(argv[i],"-playback") == 0)
-		{
-			i++;
-			if (i < argc)  /* point to inp file name */
-				playbackname = argv[i];
-        	}
+	for (i = 1; i < argc; i++) {
+		if (*argv[i] == '-') {
+			if (strcmp(argv[i], "-k") == 0) {
+				if (++i < argc) {
+					int secs = atoi(argv[i]);
+					if (secs > 0) {
+						kiosk_timeout = secs;
+						printf("Kiosk mode enabled (%d seconds)\n", secs);
+					}
+				}
+			} else if (strcmp(argv[i], "-f") == 0) {
+				enable_freeplay = 1;
+			} else if (strcasecmp(argv[i],"-log") == 0) {
+				errorlog = fopen("error.log","wa");
+			} else if (strcasecmp(argv[i],"-nocyclone") == 0) {
+				use_cyclone=0;
+			} else if (strcasecmp(argv[i],"-drz80") == 0) {
+				use_drz80_save=1;
+			} else if (strcasecmp(argv[i],"-nodrz80_snd") == 0) {
+				use_drz80_snd_save=0;
+			} else if (strcasecmp(argv[i],"-scale") == 0) {
+				video_scale=1;
+			} else if (strcasecmp(argv[i],"-border") == 0) {
+				video_border=1;
+			} else if (strcasecmp(argv[i],"-aspect") == 0) {
+				video_aspect=1;
+			} else if (strcasecmp(argv[i],"-nothrottle") == 0) {
+				throttle=0;
+			} else if (strcasecmp(argv[i],"-nosound") == 0) {
+				soundcard=0;
+	        } else if (strcasecmp(argv[i],"-playback") == 0) {
+				if (++i < argc) {
+					playbackname = argv[i];
+				}
+	        }
+		} else {
+            strcpy(gamenameselection, argv[i]);
+		}
 	}
 
 	if (argc == 1)
@@ -175,14 +189,6 @@ int main (int argc, char **argv)
 			exit (res);
 		}
 	}
-
-    for (j = 1; j < argc; j++)
-    {
-        if (argv[j][0] != '-') {
-            strcpy(gamenameselection, argv[j]);
-            break;
-        }
-    }
 
     if(init_SDL()==0) {
         exit(1);
@@ -364,25 +370,6 @@ gui_loop:
 	}
 #endif
 
-    /*
-		for (i=0;i<MAX_CPU;i++)
-		{
-			int *type=(int*)&(drivers[game_index]->drv->cpu[i].cpu_type);
-			if (((*type)&0xff)==CPU_V30)
-			{
-				*type=((*type)&(~0xff))|CPU_ARMV30;
-			}
-		}
-		for (i=0;i<MAX_CPU;i++)
-		{
-			int *type=(int*)&(drivers[game_index]->drv->cpu[i].cpu_type);
-			if (((*type)&0xff)==CPU_V33)
-			{
-				*type=((*type)&(~0xff))|CPU_ARMV33;
-			}
-		}
-    */
-
     // Remove the mouse usage for certain games
     if ( (strcasecmp(drivers[game_index]->name,"hbarrel")==0) || (strcasecmp(drivers[game_index]->name,"hbarrelw")==0) ||
          (strcasecmp(drivers[game_index]->name,"midres")==0) || (strcasecmp(drivers[game_index]->name,"midresu")==0) ||
@@ -411,6 +398,7 @@ gui_loop:
 
     /* go for it */
     printf ("%s (%s)...\n",drivers[game_index]->description,drivers[game_index]->name);
+
     res = run_game (game_index);
 
 	/* close open files */

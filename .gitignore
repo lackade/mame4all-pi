@@ -1,0 +1,6 @@
+cfg
+mame
+*.cfg
+obj_mame_rpi
+roms
+snap
