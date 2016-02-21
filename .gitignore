@@ -4,3 +4,5 @@ mame
 obj_mame_rpi
 roms
 snap
+.DS_Store
+._.DS_Store

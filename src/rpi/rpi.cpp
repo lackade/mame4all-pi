@@ -40,6 +40,7 @@ void frontend_gui (char *gamename, int first_run);
 int kiosk_mode;
 int kiosk_timeout = 0;
 int enable_freeplay = 0;
+int enable_freeplay_hack = 1;
 
 static FILE *errorlog;
 
@@ -148,6 +149,8 @@ int main (int argc, char **argv)
 				}
 			} else if (strcmp(argv[i], "-f") == 0) {
 				enable_freeplay = 1;
+			} else if (strcmp(argv[i], "-F") == 0) {
+				enable_freeplay_hack = 1;
 			} else if (strcasecmp(argv[i],"-log") == 0) {
 				errorlog = fopen("error.log","wa");
 			} else if (strcasecmp(argv[i],"-nocyclone") == 0) {

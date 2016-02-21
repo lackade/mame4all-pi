@@ -733,21 +733,35 @@ static void parse_dip_switches()
 	struct InputPort *item = Machine->input_ports;
 	while (item->type != IPT_END) {
 		if ((item->type & ~IPF_MASK) == IPT_DIPSWITCH_NAME 
-			&& input_port_name(item) != 0 
 			&& (item->type & IPF_UNUSED) == 0 
 			&& !(!options.cheat && (item->type & IPF_CHEAT))) {
+			const char *item_name = input_port_name(item);
 
-			struct InputPort *sub = item + 1;
-			while ((sub->type & ~IPF_MASK) == IPT_DIPSWITCH_SETTING) {
-				const char *port_name = input_port_name(sub);
-				if (strcasecmp(port_name, "free play")) {
-					if (sub->default_value != item->default_value) {
-						printf("FIXME: Freeplay (not yet) enabled\n");
-						dump_dip_switches(); // FIXME
+			if (item_name != NULL) {
+				struct InputPort *sub = item + 1;
+				if (strcasecmp(item_name, "free play") == 0) {
+					while ((sub->type & ~IPF_MASK) == IPT_DIPSWITCH_SETTING) {
+						if (strcasecmp(input_port_name(sub), "on") == 0) {
+							if (sub->default_value != item->default_value) {
+								item->default_value = sub->default_value & item->mask;
+							}
+							printf("Freeplay enabled\n");
+							return;
+						}
+						sub++;
 					}
-					return;
+				} else {
+					while ((sub->type & ~IPF_MASK) == IPT_DIPSWITCH_SETTING) {
+						if (strcasecmp(input_port_name(sub), "free play") == 0) {
+							if (sub->default_value != item->default_value) {
+								item->default_value = sub->default_value & item->mask;
+							}
+							printf("Freeplay enabled\n");
+							return;
+						}
+						sub++;
+					}
 				}
-				sub++;
 			}
 		}
 		item++;
@@ -768,13 +782,14 @@ static void dump_dip_switches()
 			&& (item->type & IPF_UNUSED) == 0 
 			&& !(!options.cheat && (item->type & IPF_CHEAT))) {
 
-			printf("  %s\n", input_port_name(item));
+			printf("  %s 0x%x 0x%x\n", input_port_name(item), item->mask, item->default_value);
 
 			struct InputPort *sub = item + 1;
 			while ((sub->type & ~IPF_MASK) == IPT_DIPSWITCH_SETTING) {
-				printf("   %c %s\n", 
+				printf("   %c %s 0x%x\n", 
 					(sub->default_value == item->default_value) ? 'x' : ' ',
-					input_port_name(sub));
+					input_port_name(sub),
+					sub->default_value);
 				sub++;
 			}
 		}
