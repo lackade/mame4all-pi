@@ -40,7 +40,8 @@ CFLAGS = -fsigned-char $(DEVLIBS) \
 	-mstructure-size-boundary=32 -fexpensive-optimizations \
 	-fweb -frename-registers -falign-functions=16 -falign-loops -falign-labels -falign-jumps \
 	-finline -finline-functions -fno-common -fno-builtin -fsingle-precision-constant \
-	-Wall -Wno-sign-compare -Wunused -Wpointer-arith -Wcast-align -Waggregate-return -Wshadow 
+	-Wall -Wno-sign-compare -Wunused -Wpointer-arith -Wcast-align -Waggregate-return -Wshadow \
+	-Wno-narrowing
 
 LDFLAGS = $(CFLAGS)
 
