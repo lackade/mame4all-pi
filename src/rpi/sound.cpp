@@ -115,7 +115,7 @@ void osd_stop_audio_stream(void)
 	if (Machine->sample_rate == 0)
 		return;
 	
-	alsa_free(g_alsa);
+	if (g_alsa) alsa_free(g_alsa);
 	
 	// print out over/underflow stats
 	logerror("Sound buffer: fifo_overrun=%d fifo_underrun=%d snd_underrun=%d\n", fifo_overrun, fifo_underrun, snd_underrun);	
@@ -225,9 +225,9 @@ int osd_update_audio_stream(INT16 *buffer)
 	if (Machine->sample_rate == 0) return samples_per_frame;
 
 	stream_cache_data = buffer;
-	
+
 	profiler_mark(PROFILER_USER1);
-	alsa_write(g_alsa, buffer, (samples_per_frame * stream_cache_channels * sizeof(signed short)) );
+	if (g_alsa) alsa_write(g_alsa, buffer, (samples_per_frame * stream_cache_channels * sizeof(signed short)) );
 	profiler_mark(PROFILER_END);
 
 	return samples_per_frame;
